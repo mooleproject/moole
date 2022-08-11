@@ -38,15 +38,12 @@ from flask import Flask, request, jsonify
 import os, sys
 import socket
 import secrets
-import logging
+
 from stat import *
 
 #App name
 
 app = Flask(__name__)
-
-#logging configuration
-logging.basicConfig(filename='dwdata.log', level=logging.DEBUG)
 
 with app.app_context():
 
@@ -144,15 +141,15 @@ def getResourceLinks (sLocalResource):
 # File type from local node resource on file system
 def getFileType (sLocalResource):
     sRet = "n.d."
-    #Check the extension infinite points separators!!
+    #Check the extension
     try:
-        if((len(sLocalResource) > 3) and (sLocalResource.count(".") > 0)):
+        if((len(sLocalResource) > 3) and (sLocalResource.count(".") == 1)):
             #extension
             sTemp = sLocalResource.split(".")
-            sNum  = len(sTemp)
-            sRet = sTemp[sNum-1]
+            if (len(sTemp) == 2):
+                sRet = sTemp[1]
     except:
-       logging.error("getFileType::An error occurred")
+       print("getFileType::An error occurred")
      
     return sRet
    
@@ -185,12 +182,11 @@ def get_dwdata(srRefUrl):
         """
         top = "/Users/marcopuccetti/Sites/Eo_Admin/"
         # Retrive all the node information, on WSGI application on '/var/www/the_app'
-        tot_count = 0
+
         for root, dirs, files in os.walk(top, topdown=False):
              #if(l_count >= 100): break
              l_count = 0
              t_count = len(files)
-             tot_count +=  t_count
              #print("*******DEBUG**********")
              #print("Directory: "+root)
              #print("Total Resources: "+str(t_count))
@@ -206,12 +202,12 @@ def get_dwdata(srRefUrl):
                  try:
                    statinfo = os.stat(srName)
                  except (FileNotFoundError):
-                     logging.error("Error reading the resource: "+srName)
-                     logging.info("This resource will be skipped.")
+                     print("Warning error reading the resource: "+srName)
+                     print("This resource will be skipped.")
                      _berror = True
                  stmode = statinfo.st_mode
                  if S_ISREG(stmode) and (_berror == False):
-                        logging.info("Regular file: "+srName)
+                        print("Regular file")
                     #Process only regular files!!
                         srID = str(secrets.token_hex()).ljust(_MAX_ID_SIZE)
                         srType = getFileType(srName).ljust(_MAX_RES_TYPE_SIZE)
@@ -241,15 +237,14 @@ def get_dwdata(srRefUrl):
                             _dwnodeinfo+="""},"""
                         else:
                             _dwnodeinfo+="""}"""
+                        
+             print("**********************")
         _dwnodeinfo+="""
          ]
         }
         """
         _dwnodeinfo = _dwnodeinfo.replace("\n","")
-        logging.info("**********************")
-        logging.info("Total Resource number: "+str(tot_count))
-        logging.info("**********************")
-        #logging.info ("get_dwdata::dwnodeinfo--> "+_dwnodeinfo)
+        print ("get_dwdata::dwnodeinfo--> "+_dwnodeinfo)
         return _dwnodeinfo
 
 ######################################################
@@ -269,7 +264,7 @@ def dwdata():
        if(_srRefUrl == "/"):
            _srRefUrl = socket.gethostname()
            
-       logging.info ("URL: "+_srRefUrl)
+       print ("URL: "+_srRefUrl)
      
        _dwnodeinfo = ""
        set_data (_dwnodeinfo, _srRefUrl)
